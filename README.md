@@ -1,4 +1,5 @@
 ## 修改说明
+1. 基于v3.12.1
 1. 配置：Debug, Release, RelWithDebInfo, MinSizeRel
 2. 存在两种构建系统：
 * 单配置构建系统：如make、ninja，要调整配置需要clean后重新编译
