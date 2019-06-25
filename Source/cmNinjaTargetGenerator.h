@@ -160,6 +160,7 @@ protected:
                             cmGeneratorTarget* target, cmNinjaVars& vars);
 
   bool ForceResponseFile();
+  std::string ComputeTargetCompilePDB() const override;
 
 private:
   cmLocalNinjaGenerator* LocalGenerator;

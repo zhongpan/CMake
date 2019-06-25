@@ -696,7 +696,8 @@ void cmNinjaNormalTargetGenerator::WriteDeviceLinkStatement()
     EnsureParentDirectoryExists(impLibPath);
   }
 
-  const std::string objPath = GetGeneratorTarget()->GetSupportDirectory();
+  const std::string objPath =
+    GetGeneratorTarget()->GetObjectDirectory(cfgName);
   vars["OBJECT_DIR"] = this->GetLocalGenerator()->ConvertToOutputFormat(
     this->ConvertToNinjaPath(objPath), cmOutputConverter::SHELL);
   EnsureDirectoryExists(objPath);
@@ -905,7 +906,7 @@ void cmNinjaNormalTargetGenerator::WriteLinkStatement()
     vars["TARGET_PDB"] = base + suffix + dbg_suffix;
   }
 
-  const std::string objPath = GetGeneratorTarget()->GetSupportDirectory();
+  const std::string objPath = GetGeneratorTarget()->GetObjectDirectory(cfgName);
   vars["OBJECT_DIR"] = this->GetLocalGenerator()->ConvertToOutputFormat(
     this->ConvertToNinjaPath(objPath), cmOutputConverter::SHELL);
   EnsureDirectoryExists(objPath);

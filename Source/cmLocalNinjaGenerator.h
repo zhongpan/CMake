@@ -76,6 +76,12 @@ public:
   void AppendCustomCommandDeps(cmCustomCommandGenerator const& ccg,
                                cmNinjaDeps& ninjaDeps);
 
+  std::string ComputeLongestObjectDirectory(
+    cmGeneratorTarget const*) const;
+  void ComputeObjectFilenames(
+    std::map<cmSourceFile const*, std::string>& mapping,
+    cmGeneratorTarget const* = 0) override;
+
 protected:
   std::string ConvertToIncludeReference(
     std::string const& path,

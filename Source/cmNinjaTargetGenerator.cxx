@@ -892,7 +892,7 @@ void cmNinjaTargetGenerator::WriteObjectBuildStatement(
   std::string const sourceFileName =
     language == "RC" ? source->GetFullPath() : this->GetSourceFilePath(source);
   std::string const objectDir =
-    this->ConvertToNinjaPath(this->GeneratorTarget->GetSupportDirectory());
+    this->ConvertToNinjaPath(this->GeneratorTarget->GetObjectDirectory(this->GetConfigName()));
   std::string const objectFileName =
     this->ConvertToNinjaPath(this->GetObjectFilePath(source));
   std::string const objectFileDir =
@@ -1277,4 +1277,27 @@ bool cmNinjaTargetGenerator::ForceResponseFile()
   static std::string const forceRspFile = "CMAKE_NINJA_FORCE_RESPONSE_FILE";
   return (this->GetMakefile()->IsDefinitionSet(forceRspFile) ||
           cmSystemTools::HasEnv(forceRspFile));
+}
+
+std::string cmNinjaTargetGenerator::ComputeTargetCompilePDB() const
+{
+  std::string compilePdbPath;
+  if (this->GeneratorTarget->GetType() > cmStateEnums::OBJECT_LIBRARY) {
+    return compilePdbPath;
+  }
+  compilePdbPath =
+    this->GeneratorTarget->GetCompilePDBPath(this->GetConfigName());
+  if (compilePdbPath.empty()) {
+    // Match VS default: `$(IntDir)vc$(PlatformToolsetVersion).pdb`.
+    // A trailing slash tells the toolchain to add its default file name.
+    compilePdbPath =
+      this->GeneratorTarget->GetObjectDirectory(this->GetConfigName());
+    if (this->GeneratorTarget->GetType() == cmStateEnums::STATIC_LIBRARY) {
+      // Match VS default for static libs: `$(IntDir)$(ProjectName).pdb`.
+      compilePdbPath += this->GeneratorTarget->GetName();
+      compilePdbPath += ".pdb";
+    }
+  }
+
+  return compilePdbPath;
 }

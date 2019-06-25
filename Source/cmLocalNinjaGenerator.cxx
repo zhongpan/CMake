@@ -106,13 +106,15 @@ void cmLocalNinjaGenerator::Generate()
 std::string cmLocalNinjaGenerator::GetTargetDirectory(
   cmGeneratorTarget const* target) const
 {
-  std::string dir = cmake::GetCMakeFilesDirectoryPostSlash();
+  std::string dir = "";//cmake::GetCMakeFilesDirectoryPostSlash();
   dir += target->GetName();
 #if defined(__VMS)
   dir += "_dir";
 #else
   dir += ".dir";
 #endif
+  dir += "/";
+  dir += this->GetConfigName();
   return dir;
 }
 
@@ -592,4 +594,79 @@ std::string cmLocalNinjaGenerator::MakeCustomLauncher(
   }
 
   return launcher;
+}
+
+
+std::string cmLocalNinjaGenerator::ComputeLongestObjectDirectory(
+  cmGeneratorTarget const* target) const
+{
+  std::vector<std::string> configs;
+  target->Target->GetMakefile()->GetConfigurations(configs);
+
+  // Compute the maximum length configuration name.
+  std::string config_max;
+  for (std::vector<std::string>::iterator i = configs.begin();
+       i != configs.end(); ++i) {
+    if (i->size() > config_max.size()) {
+      config_max = *i;
+    }
+  }
+
+  // Compute the maximum length full path to the intermediate
+  // files directory for any configuration.  This is used to construct
+  // object file names that do not produce paths that are too long.
+  std::string dir_max;
+  dir_max += this->GetCurrentBinaryDirectory();
+  dir_max += "/";
+  dir_max += this->GetTargetDirectory(target);
+  dir_max += "/";
+  dir_max += config_max;
+  dir_max += "/";
+  return dir_max;
+}
+
+void cmLocalNinjaGenerator::ComputeObjectFilenames(
+  std::map<cmSourceFile const*, std::string>& mapping,
+  cmGeneratorTarget const* gt)
+{
+  char const* custom_ext = gt->GetCustomObjectExtension();
+  std::string dir_max = this->ComputeLongestObjectDirectory(gt);
+
+  // Count the number of object files with each name.  Note that
+  // windows file names are not case sensitive.
+  std::map<std::string, int> counts;
+
+  for (auto const& si : mapping) {
+    cmSourceFile const* sf = si.first;
+    std::string objectNameLower = cmSystemTools::LowerCase(
+      cmSystemTools::GetFilenameWithoutLastExtension(sf->GetFullPath()));
+    if (custom_ext) {
+      objectNameLower += custom_ext;
+    } else {
+      objectNameLower +=
+        this->GlobalGenerator->GetLanguageOutputExtension(*sf);
+    }
+    counts[objectNameLower] += 1;
+  }
+
+  // For all source files producing duplicate names we need unique
+  // object name computation.
+
+  for (auto& si : mapping) {
+    cmSourceFile const* sf = si.first;
+    std::string objectName =
+      cmSystemTools::GetFilenameWithoutLastExtension(sf->GetFullPath());
+    if (custom_ext) {
+      objectName += custom_ext;
+    } else {
+      objectName += this->GlobalGenerator->GetLanguageOutputExtension(*sf);
+    }
+    if (counts[cmSystemTools::LowerCase(objectName)] > 1) {
+      const_cast<cmGeneratorTarget*>(gt)->AddExplicitObjectName(sf);
+      bool keptSourceExtension;
+      objectName = this->GetObjectFileNameWithoutTarget(
+        *sf, dir_max, &keptSourceExtension, custom_ext);
+    }
+    si.second = objectName;
+  }
 }
